@@ -9,70 +9,36 @@ HOPF_LENS_DC represents an approach to LLM task execution where the model is not
 The architecture implements a mathematical framework for evidence aggregation, semantic drift detection, and confidence-based convergence, enabling robust and verifiable task completion.
 
 ## Architecture
+```mermaid
+flowchart TD
 
-The system operates through a multi-phase orchestration loop:
+subgraph BOOTSTRAP_PHASE["BOOTSTRAP PHASE"]
+    A1["1. Analyze query requirements"]
+    A2["2. Generate necessary tools via LLM"]
+    A3["3. Validate and register in runtime"]
+    A1 --> A2 --> A3
+end
 
+subgraph CONVERGENCE_LOOP["CONVERGENCE LOOP (T_MAX iterations)"]
+    B1["DECOMPOSE<br>• Query → atomic executable tasks<br>• Priority-based scheduling"]
+    B2["EXECUTE<br>• Run tasks in batches (K_EXEC)<br>• Capture execution metadata<br>• Auto-repair on failure"]
+    B3["COMPOSE<br>• Synthesize results into answer<br>• Aggregate evidence and confidence<br>• Fallback summary on LLM failure"]
+    B4["ANTIPODE (Counterfactual Testing)<br>• Generate adversarial queries<br>• Test robustness (K_ATTACK probes)<br>• Identify vulnerabilities"]
+    B5["PUTBACK (Policy Repair)<br>• Validate against constraints<br>• Repair plan on violation"]
+    B6["CONVERGENCE CHECK<br>• Semantic drift: d(aₜ, aₜ₋₁) ≤ τₐ<br>• Confidence gain: Δc ≤ τ_c<br>• Evidence fragility: ν(w) ≤ τ_ν"]
+
+    B1 --> B2 --> B3 --> B4 --> B5 --> B6
+    B6 -->|Iterate until convergence| B1
+end
+
+subgraph RESULT["CONVERGED RESULT"]
+    R1["Final Answer"]
+    R2["Evidence Bundle"]
+    R3["Confidence Score"]
+end
+
+BOOTSTRAP_PHASE --> CONVERGENCE_LOOP --> RESULT
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    BOOTSTRAP PHASE                          │
-│  • Analyze query requirements                               │
-│  • Generate necessary tools via LLM                         │
-│  • Validate and register in runtime                         │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│                  CONVERGENCE LOOP (T_MAX iterations)        │
-│                                                             │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │ 1. DECOMPOSE                                       │   │
-│  │    • Query → atomic executable tasks               │   │
-│  │    • Priority-based task scheduling                │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            ↓                                │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │ 2. EXECUTE                                         │   │
-│  │    • Run tasks in batches (K_EXEC)                │   │
-│  │    • Capture execution metadata                    │   │
-│  │    • Auto-repair on failure (if applicable)        │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            ↓                                │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │ 3. COMPOSE                                         │   │
-│  │    • Synthesize answer from results                │   │
-│  │    • Extract evidence and confidence               │   │
-│  │    • Fallback summary on LLM failure               │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            ↓                                │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │ 4. ANTIPODE (Counterfactual Testing)               │   │
-│  │    • Generate adversarial queries                  │   │
-│  │    • Test answer robustness                        │   │
-│  │    • Identify vulnerabilities (K_ATTACK probes)    │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            ↓                                │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │ 5. PUTBACK (Policy Repair)                         │   │
-│  │    • Validate against constraints                  │   │
-│  │    • Repair plan if violations detected            │   │
-│  └────────────────────────────────────────────────────┘   │
-│                            ↓                                │
-│  ┌────────────────────────────────────────────────────┐   │
-│  │ 6. CONVERGENCE CHECK                               │   │
-│  │    • Semantic drift: d(a_t, a_{t-1}) ≤ τ_a        │   │
-│  │    • Confidence gain: Δc ≤ τ_c                    │   │
-│  │    • Evidence fragility: ν(w) ≤ τ_ν               │   │
-│  └────────────────────────────────────────────────────┘   │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-               ┌────────────────────────┐
-               │  CONVERGED RESULT      │
-               │  • Final answer        │
-               │  • Evidence bundle     │
-               │  • Confidence score    │
-               └────────────────────────┘
-```
-
 ## Key Components
 
 ### 1. Dynamic Tool Registry
