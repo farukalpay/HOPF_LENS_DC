@@ -678,10 +678,171 @@ class TestContracts(unittest.TestCase):
         self.assertFalse(valid)
 
 
+class TestTwoPhaseSynthesis(unittest.TestCase):
+    """
+    Regression tests for two-phase synthesis.
+
+    Tests the critical fix for enum mapping bug where values
+    were being filled with query text instead of enum-mapped values.
+    """
+
+    def test_enum_mapping_before_defaults(self):
+        """
+        REGRESSION TEST for unit_system bug.
+
+        Bug: When synthesizing from {temp_unit: "C"} to {unit_system: "metric"},
+        the system was filling unit_system with query text instead of
+        applying enum mapping.
+
+        Fix: Two-phase synthesis ensures enum mapping happens BEFORE defaults.
+        """
+        # Old schema: temp_unit with {C, F}
+        old_schema = JSONSchema(
+            name="weather_v1",
+            type=JSONType.OBJECT,
+            properties={
+                "city": JSONSchema(name="city", type=JSONType.STRING),
+                "temp_unit": JSONSchema(
+                    name="temp_unit",
+                    type=JSONType.STRING,
+                    enum=["C", "F"]
+                )
+            },
+            required={"city", "temp_unit"}
+        )
+
+        # New schema: unit_system with {metric, imperial}
+        new_schema = JSONSchema(
+            name="weather_v2",
+            type=JSONType.OBJECT,
+            properties={
+                "city": JSONSchema(name="city", type=JSONType.STRING),
+                "unit_system": JSONSchema(
+                    name="unit_system",
+                    type=JSONType.STRING,
+                    enum=["metric", "imperial"]
+                )
+            },
+            required={"city", "unit_system"}
+        )
+
+        # Context with query (this was incorrectly filling unit_system)
+        context = Context(query="What's the weather in Paris?")
+
+        # Partial args with old enum value
+        partial_args = {"city": "Paris", "temp_unit": "C"}
+
+        # Synthesize
+        synthesizer = ArgumentSynthesizer()
+        result = synthesizer.synthesize(
+            partial_args=partial_args,
+            context=context,
+            source_schema=old_schema,
+            target_schema=new_schema
+        )
+
+        # Verify success
+        self.assertTrue(result.is_success(), f"Synthesis failed: {result.error}")
+
+        # Verify enum mapping was applied correctly
+        args = result.value["arguments"]
+        self.assertIn("unit_system", args)
+
+        # CRITICAL: unit_system should be "metric" (enum-mapped), NOT query text
+        self.assertEqual(args["unit_system"], "metric",
+                        "Enum mapping should convert C -> metric, not fill with query text")
+        self.assertNotEqual(args["unit_system"], context.query,
+                           "unit_system should NOT be filled with query text")
+
+    def test_nested_enum_mapping(self):
+        """Test enum mapping in nested structures"""
+        old_schema = JSONSchema(
+            name="config_v1",
+            type=JSONType.OBJECT,
+            properties={
+                "mode": JSONSchema(name="mode", type=JSONType.STRING, enum=["dev", "prod"])
+            }
+        )
+
+        new_schema = JSONSchema(
+            name="config_v2",
+            type=JSONType.OBJECT,
+            properties={
+                "settings": JSONSchema(
+                    name="settings",
+                    type=JSONType.OBJECT,
+                    properties={
+                        "environment": JSONSchema(
+                            name="environment",
+                            type=JSONType.STRING,
+                            enum=["development", "production"]
+                        )
+                    }
+                )
+            }
+        )
+
+        context = Context(query="Configure for production")
+        partial_args = {"mode": "prod"}
+
+        synthesizer = ArgumentSynthesizer()
+        result = synthesizer.synthesize(
+            partial_args=partial_args,
+            context=context,
+            source_schema=old_schema,
+            target_schema=new_schema
+        )
+
+        # Should successfully map prod -> production even with nesting
+        self.assertTrue(result.is_success())
+
+    def test_phase_separation(self):
+        """Test that shape edits happen before value edits"""
+        old_schema = JSONSchema(
+            name="data_v1",
+            type=JSONType.OBJECT,
+            properties={
+                "value": JSONSchema(name="value", type=JSONType.STRING, enum=["a", "b"])
+            }
+        )
+
+        new_schema = JSONSchema(
+            name="data_v2",
+            type=JSONType.OBJECT,
+            properties={
+                "container": JSONSchema(
+                    name="container",
+                    type=JSONType.OBJECT,
+                    properties={
+                        "value": JSONSchema(name="value", type=JSONType.STRING, enum=["alpha", "beta"])
+                    }
+                )
+            }
+        )
+
+        context = Context(query="test")
+        partial_args = {"value": "a"}
+
+        synthesizer = ArgumentSynthesizer()
+        result = synthesizer.synthesize(
+            partial_args=partial_args,
+            context=context,
+            source_schema=old_schema,
+            target_schema=new_schema
+        )
+
+        # Should successfully nest AND map enum
+        self.assertTrue(result.is_success())
+        args = result.value["arguments"]
+        self.assertIn("container", args)
+        self.assertIn("value", args["container"])
+        self.assertEqual(args["container"]["value"], "alpha")
+
+
 def run_tests():
     """Run all tests"""
     print("=" * 70)
-    print("HOPF/Lens Framework - Comprehensive Test Suite")
+    print("HOPF/Lens Framework - Comprehensive Test Suite v0.2")
     print("=" * 70)
 
     loader = unittest.TestLoader()
@@ -699,6 +860,7 @@ def run_tests():
     suite.addTests(loader.loadTestsFromTestCase(TestSelfCorrectionCoalgebra))
     suite.addTests(loader.loadTestsFromTestCase(TestSoundnessProperties))
     suite.addTests(loader.loadTestsFromTestCase(TestContracts))
+    suite.addTests(loader.loadTestsFromTestCase(TestTwoPhaseSynthesis))  # NEW: v0.2 tests
 
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)

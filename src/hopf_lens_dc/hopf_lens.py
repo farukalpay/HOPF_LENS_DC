@@ -555,32 +555,85 @@ class ArgumentSynthesizer:
         contract: Optional[Contract] = None
     ) -> Effect[Dict[str, Any]]:
         """
-        Synthesize total arguments from partial.
+        Two-phase synthesis: shape then value.
 
-        Flow:
-        1. Generate candidate edit sequences
-        2. Apply Kan extensions
-        3. Fill with defaults from context
-        4. Apply coercions
-        5. Unify constraints
-        6. Select minimal cost satisfying contract
+        PHASE 1 (Shape):
+          1. Apply NEST/UNNEST edits to create correct structure
+          2. Apply RENAME edits to get correct field names
+          3. Apply FIELD_ADD/REMOVE for new/removed fields
+          Result: correct structure, possibly wrong values
+
+        PHASE 2 (Value):
+          1. Apply ENUM_MAP transformations to map values
+          2. Extract defaults from context (only for truly missing fields)
+          3. Apply COERCION transformations
+          4. Apply NORMALIZE transformations
+          Result: correct structure AND values
+
+        This separation ensures enum mappings happen before defaults,
+        fixing the bug where string fields got query text instead of
+        enum-mapped values.
         """
-        # Generate edit sequence from source to target schema
-        edits = self._generate_edits(source_schema, target_schema)
-
-        # Create repair plan
-        defaults = self._extract_defaults(context, target_schema)
-        plan = RepairPlan(edits=edits, defaults=defaults)
-
-        # Apply repair
         try:
-            repaired, cost = plan.apply(partial_args, context)
+            # Generate edit sequence with phase separation
+            edits = self._generate_edits(source_schema, target_schema)
 
-            # Apply coercions
+            # Separate edits by phase
+            shape_edits = [e for e in edits if e.edit_type in [
+                EditType.NEST, EditType.UNNEST, EditType.RENAME,
+                EditType.FIELD_ADD, EditType.FIELD_REMOVE
+            ]]
+            value_edits = [e for e in edits if e.edit_type in [
+                EditType.ENUM_MAP, EditType.COERCION, EditType.DEFAULT_ADD
+            ]]
+
+            # PHASE 1: Shape transformation
+            repaired = copy.deepcopy(partial_args)
+            shape_cost = 0.0
+
+            for edit in shape_edits:
+                # Handle RENAME edits directly for fields (not schema names)
+                if edit.edit_type == EditType.RENAME and len(edit.source_path) == 1:
+                    # Field rename
+                    old_field = edit.source_path[0]
+                    new_field = edit.target_path[0]
+                    if old_field in repaired:
+                        repaired[new_field] = repaired[old_field]
+                        del repaired[old_field]
+                    shape_cost += edit.cost
+                else:
+                    # Use Kan extension for other shape edits
+                    kan = KanExtension(
+                        edit=edit,
+                        source_functor=FeatureFunctor(field_types={})
+                    )
+                    repaired = kan.migration(repaired)
+                    shape_cost += edit.cost
+
+            # PHASE 2: Value transformation
+            value_cost = 0.0
+
+            # 2.1: Apply enum mappings FIRST (before defaults)
+            for edit in value_edits:
+                if edit.edit_type == EditType.ENUM_MAP:
+                    repaired = self._apply_enum_mapping(repaired, edit)
+                    value_cost += edit.cost
+
+            # 2.2: Extract defaults from context (only for missing fields)
+            defaults = self._extract_defaults(context, target_schema)
+            for field, default_value in defaults.items():
+                # Only fill if field is missing or empty
+                if field not in repaired or repaired[field] is None or repaired[field] == "":
+                    repaired[field] = default_value
+                    value_cost += 0.1  # Small cost for default
+
+            # 2.3: Apply coercions
             repaired = self._apply_coercions(repaired, target_schema)
 
-            # Unify constraints
+            # 2.4: Unify constraints
             repaired = self._unify_constraints(repaired, context, target_schema)
+
+            total_cost = shape_cost + value_cost
 
             # Validate contract
             if contract:
@@ -591,7 +644,7 @@ class ArgumentSynthesizer:
             # Return with metadata
             return Effect.pure({
                 "arguments": repaired,
-                "cost": cost,
+                "cost": total_cost,
                 "edits": [e.edit_type.value for e in edits]
             })
 
@@ -603,7 +656,10 @@ class ArgumentSynthesizer:
         source: JSONSchema,
         target: JSONSchema
     ) -> List[SchemaEdit]:
-        """Generate edit sequence from source to target schema"""
+        """
+        Generate edit sequence from source to target schema.
+        Detects structural changes and value transformations.
+        """
         edits = []
 
         # Compare schemas to determine edits needed
@@ -633,7 +689,7 @@ class ArgumentSynthesizer:
                                 cost=self.default_costs[EditType.NEST]
                             ))
 
-        # Check for enum mappings
+        # Check for enum mappings at top level
         if source.enum and target.enum:
             if source.enum != target.enum:
                 # Create enum mapping
@@ -651,14 +707,171 @@ class ArgumentSynthesizer:
                     cost=self.default_costs[EditType.ENUM_MAP]
                 ))
 
+        # Check for enum mappings and renames in properties (field-level)
+        for src_prop, src_prop_schema in source.properties.items():
+            # Find corresponding target property (may be renamed or nested)
+            target_prop = src_prop
+            target_prop_schema = target.properties.get(target_prop)
+            found_via_search = False
+
+            # If not found directly, might be renamed
+            if not target_prop_schema and source_props != target_props:
+                # Try to find renamed field
+                for tgt_prop, tgt_schema in target.properties.items():
+                    if (tgt_schema.type == src_prop_schema.type and
+                        tgt_prop not in source_props):
+                        target_prop = tgt_prop
+                        target_prop_schema = tgt_schema
+                        found_via_search = True
+                        break
+
+            # If still not found, might be nested - search in nested objects
+            if not target_prop_schema:
+                for tgt_prop, tgt_schema in target.properties.items():
+                    if tgt_schema.type == JSONType.OBJECT:
+                        # Check if src_prop is nested inside this object
+                        if src_prop in tgt_schema.properties:
+                            target_prop_schema = tgt_schema.properties[src_prop]
+                            found_via_search = True
+                            # Don't update target_prop here - it will be nested by the NEST edit
+                            break
+
+            # If we found a match, check for rename and enum mapping
+            if target_prop_schema:
+                # Check for rename (field name changed)
+                if found_via_search and target_prop != src_prop and target_prop_schema.type == src_prop_schema.type:
+                    # Add RENAME edit
+                    edits.append(SchemaEdit(
+                        edit_type=EditType.RENAME,
+                        source_path=[src_prop],
+                        target_path=[target_prop],
+                        cost=self.default_costs[EditType.RENAME]
+                    ))
+
+                # Check if this property has enum mapping
+                if src_prop_schema.enum and target_prop_schema.enum:
+                    if src_prop_schema.enum != target_prop_schema.enum:
+                        # Create field-level enum mapping
+                        mapping = {}
+                        for i, src_val in enumerate(src_prop_schema.enum):
+                            if i < len(target_prop_schema.enum):
+                                mapping[src_val] = target_prop_schema.enum[i]
+
+                        edits.append(SchemaEdit(
+                            edit_type=EditType.ENUM_MAP,
+                            source_path=[src_prop],
+                            target_path=[target_prop],  # Use target_prop for rename case
+                            parameters={"mapping": mapping},
+                            cost=self.default_costs[EditType.ENUM_MAP]
+                        ))
+
         return edits
+
+    def _apply_enum_mapping(
+        self,
+        args: Dict[str, Any],
+        edit: SchemaEdit
+    ) -> Dict[str, Any]:
+        """
+        Apply enum mapping transformation.
+
+        Takes an edit with ENUM_MAP type and transforms values
+        according to the mapping in edit.parameters.
+
+        Handles both top-level and nested fields.
+
+        Args:
+            args: Arguments dict (possibly nested)
+            edit: SchemaEdit with type ENUM_MAP and mapping in parameters
+
+        Returns:
+            Transformed arguments with mapped enum values
+        """
+        if edit.edit_type != EditType.ENUM_MAP:
+            return args
+
+        result = copy.deepcopy(args)
+        mapping = edit.parameters.get("mapping", {})
+
+        if not mapping:
+            return result
+
+        # Get source and target paths
+        source_path = edit.source_path
+        target_path = edit.target_path
+
+        if not source_path:
+            return result
+
+        # Navigate to find the field (handles nesting)
+        def apply_mapping_recursive(obj: Any, path: List[str], remaining_path: List[str]) -> Any:
+            if not isinstance(obj, dict):
+                return obj
+
+            if not remaining_path:
+                # We're at the target - look for the field
+                field_name = path[-1] if path else None
+                if field_name and field_name in obj and obj[field_name] in mapping:
+                    obj[field_name] = mapping[obj[field_name]]
+                return obj
+
+            # Navigate deeper
+            next_key = remaining_path[0]
+            if next_key in obj:
+                obj[next_key] = apply_mapping_recursive(
+                    obj[next_key],
+                    path,
+                    remaining_path[1:]
+                )
+
+            return obj
+
+        # Try to find and map the field
+        source_field = source_path[-1]
+        target_field = target_path[-1] if target_path else source_field
+
+        # In phase 2 (after shape phase), field may already be renamed
+        # So try both source_field and target_field
+        field_to_map = None
+        if source_field in result:
+            field_to_map = source_field
+        elif target_field in result:
+            # Field was already renamed in phase 1
+            field_to_map = target_field
+
+        if field_to_map:
+            if result[field_to_map] in mapping:
+                # Apply mapping
+                mapped_value = mapping[result[field_to_map]]
+                result[field_to_map] = mapped_value
+        else:
+            # Search in nested structures
+            for key, value in result.items():
+                if isinstance(value, dict):
+                    # Try both source and target field names
+                    nested_field = None
+                    if source_field in value:
+                        nested_field = source_field
+                    elif target_field in value:
+                        nested_field = target_field
+
+                    if nested_field and value[nested_field] in mapping:
+                        mapped_value = mapping[value[nested_field]]
+                        value[nested_field] = mapped_value
+
+        return result
 
     def _extract_defaults(
         self,
         context: Context,
         schema: JSONSchema
     ) -> Dict[str, Any]:
-        """Extract default values from context and schema"""
+        """
+        Extract default values from context and schema.
+
+        IMPORTANT: Only extracts defaults for truly missing fields.
+        Does NOT override existing values (even if they need enum mapping).
+        """
         defaults = {}
 
         # Use schema defaults
@@ -670,10 +883,10 @@ class ArgumentSynthesizer:
             if prop_schema.default is not None:
                 defaults[prop_name] = prop_schema.default
             elif prop_name in schema.required:
-                # Try to synthesize from context
+                # Try to synthesize from context ONLY for missing fields
                 if prop_schema.type == JSONType.STRING:
-                    # Use query for string defaults
-                    if context.query:
+                    # Only use query if field has no enum (enum fields handled separately)
+                    if not prop_schema.enum and context.query:
                         defaults[prop_name] = context.query
                 elif prop_schema.type == JSONType.INTEGER:
                     # Extract numbers from query
