@@ -23,7 +23,7 @@ from bs4 import BeautifulSoup
 # CONFIGURATION
 # ============================================================================
 
-OPENAI_API_KEY = "sk-proj-..."
+OPENAI_API_KEY = None  # Set via environment variable or function argument
 MODEL = "gpt-4-0613"
 
 # Convergence parameters
@@ -1249,12 +1249,23 @@ def bootstrap_tools_with_llm(query: str) -> bool:
 # MAIN ORCHESTRATOR
 # ============================================================================
 
-def hopf_lens_dc(query: str, time_budget_ms: int = TIME_BUDGET_MS) -> Dict[str, Any]:
+def hopf_lens_dc(query: str, api_key: str, time_budget_ms: int = TIME_BUDGET_MS) -> Dict[str, Any]:
     """
     HOPF_LENS_DC orchestrator with dynamic tool creation and self-correction loop
+
+    Args:
+        query: The query to process
+        api_key: OpenAI API key
+        time_budget_ms: Time budget in milliseconds
+
+    Returns:
+        Dictionary containing answer, evidence, confidence, and metadata
     """
+    if not api_key:
+        raise ValueError("OpenAI API key is required")
+
     # Initialize OpenAI
-    openai.api_key = OPENAI_API_KEY
+    openai.api_key = api_key
     
     # Bootstrap: Let LLM create necessary tools
     bootstrap_tools_with_llm(query)
@@ -1586,21 +1597,37 @@ def hopf_lens_dc(query: str, time_budget_ms: int = TIME_BUDGET_MS) -> Dict[str, 
 # ============================================================================
 
 if __name__ == "__main__":
-    # Example queries to test
-    queries = [
-        "Who is Faruk Alpay?",
-        "What is the capital of France and what is its population?",
-        "Calculate 123 * 456 and tell me if it's prime",
-        "What are the benefits of regular exercise?"
-    ]
-    
-    # Run for the first query
-    query = queries[0]
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="HOPF_LENS_DC: Dynamic LLM Orchestrator"
+    )
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        required=True,
+        help="OpenAI API key"
+    )
+    parser.add_argument(
+        "--query",
+        type=str,
+        default="Who is Faruk Alpay?",
+        help="Query to process"
+    )
+    parser.add_argument(
+        "--time-budget",
+        type=int,
+        default=TIME_BUDGET_MS,
+        help="Time budget in milliseconds"
+    )
+
+    args = parser.parse_args()
+
     print(f"Testing HOPF_LENS_DC system with dynamic tool creation\n")
     print("=" * 80)
-    
-    result = hopf_lens_dc(query)
-    
+
+    result = hopf_lens_dc(args.query, args.api_key, args.time_budget)
+
     print("\n" + "=" * 80)
     print("EXECUTION COMPLETE")
     print(f"Total steps: {result['steps']}")

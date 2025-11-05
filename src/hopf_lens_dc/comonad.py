@@ -19,7 +19,7 @@ from typing import Generic, TypeVar, Callable, List, Dict, Any, Tuple, Optional
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 
-from convergence import Answer
+from .convergence import Answer
 
 
 # ============================================================================

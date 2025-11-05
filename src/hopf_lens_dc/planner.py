@@ -14,7 +14,7 @@ from typing import List, Dict, Any, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
 
-from categorical_core import (
+from .categorical_core import (
     Context, ToolMorphism, ComposedMorphism, CompositionType,
     CategoricalToolRegistry, KanSynthesizer, Effect, AritySchema
 )
@@ -445,7 +445,7 @@ class PlanOptimizer:
 # ============================================================================
 
 if __name__ == "__main__":
-    from categorical_core import create_simple_tool, EffectType
+    from .categorical_core import create_simple_tool, EffectType
 
     print("Planner Functor Module")
     print("=" * 60)

@@ -13,16 +13,21 @@ Validates:
 
 import unittest
 from typing import Dict, Any
+import sys
+import os
 
-from categorical_core import (
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.hopf_lens_dc.categorical_core import (
     Context, AritySchema, DirectAssembler, ToolMorphism,
     CategoricalToolRegistry, Effect, EffectType, KanSynthesizer,
     create_simple_tool
 )
-from planner import PlannerFunctor, QueryObject
-from convergence import Answer, AnswerCoalgebra, AnswerEndofunctor, SemanticDriftMetric
-from evidence import Evidence, Claim, Source, SourceType, EvidencePolicy
-from comonad import ContextComonad, AttackGenerator, CounterfactualExecutor
+from src.hopf_lens_dc.planner import PlannerFunctor, QueryObject
+from src.hopf_lens_dc.convergence import Answer, AnswerCoalgebra, AnswerEndofunctor, SemanticDriftMetric
+from src.hopf_lens_dc.evidence import Evidence, Claim, Source, SourceType, EvidencePolicy
+from src.hopf_lens_dc.comonad import ContextComonad, AttackGenerator, CounterfactualExecutor
 
 
 class TestArgumentValidation(unittest.TestCase):
@@ -342,7 +347,7 @@ class TestComonad(unittest.TestCase):
 
     def test_attack_execution(self):
         """Test counterfactual attack execution"""
-        from comonad import ConfidenceAttack
+        from src.hopf_lens_dc.comonad import ConfidenceAttack
 
         answer = Answer(text="Paris is the capital", confidence=0.8)
         attack = ConfidenceAttack(confidence_delta=-0.3)

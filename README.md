@@ -1,418 +1,462 @@
 # HOPF_LENS_DC
 
-**A mathematically rigorous LLM orchestration framework with formal guarantees**
+**Category-Theoretic Framework for LLM Tool Composition with Formal Guarantees**
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/tests-22%20passing-brightgreen.svg)]()
+[![Tests Passing](https://img.shields.io/badge/tests-22%20passing-brightgreen.svg)]()
 
-HOPF_LENS_DC is a sophisticated framework for LLM task execution that combines dynamic tool creation with category-theoretic foundations, providing formal guarantees for correctness, convergence, and robustness.
+## Overview
 
----
+HOPF_LENS_DC is a research-grade framework for LLM orchestration that provides mathematically rigorous guarantees for tool composition, convergence, and evidence traceability. The framework combines category theory foundations with practical tool execution, eliminating entire classes of runtime errors through type-level guarantees.
 
-## 🎯 Key Features
+### Core Contributions
 
-### **Categorical Tool Framework** (Category Theory-Based Type Safety)
-
-✅ **Provably Correct**: Tools modeled as morphisms in Kleisli category
-✅ **No Missing Arguments**: Empty dict invocations (`search_web({})`) impossible by construction
-✅ **Automatic Synthesis**: Left Kan extensions fill missing parameters from context
-✅ **Compositional**: Free monoidal structure for sequential (∘) and parallel (⊗) composition
-✅ **Convergent**: Fixed-point iteration with proven contraction mapping
-✅ **Traceable**: Full evidence provenance via natural transformations
-✅ **Robust**: Counterfactual testing via comonad structure
-
-### **Dynamic Tool Creation**
-
-🔧 **Self-Extension**: LLM generates and registers tools at runtime
-🔍 **Observable**: Comprehensive execution metadata and debug capture
-🛠️ **Auto-Repair**: AST-based code hardening on failure patterns
-📊 **Evidence-Based**: Mathematical framework for confidence and fragility
+1. **Type-Safe Tool Composition**: Tools modeled as Kleisli morphisms with explicit schemas prevent missing-argument bugs
+2. **Automatic Parameter Synthesis**: Left Kan extensions fill missing parameters from natural language context
+3. **Provable Convergence**: Coalgebra-based iteration with contraction mapping guarantees
+4. **Evidence Traceability**: Natural transformations ensure all claims factor through verified sources
+5. **Robustness Validation**: Comonad-based counterfactual testing proves answer stability
 
 ---
 
-## 🚀 Quick Start
+## Installation
 
-### Installation
+### From Source
 
-```bash
-pip install openai requests beautifulsoup4
-```
+\`\`\`bash
+git clone https://github.com/farukalpay/HOPF_LENS_DC.git
+cd HOPF_LENS_DC
+pip install -e .
+\`\`\`
 
-### Basic Usage (Dynamic Tools)
+### Dependencies
 
-```python
-from tool import hopf_lens_dc
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\`
 
-# Run query with automatic tool bootstrapping
-result = hopf_lens_dc("What are the main landmarks in Paris?")
+Requirements:
+- Python >= 3.8
+- OpenAI API >= 1.0.0
+- requests >= 2.28.0
+- beautifulsoup4 >= 4.11.0
 
-print(f"Answer: {result['answer']}")
-print(f"Confidence: {result['confidence']:.3f}")
-print(f"Tools created: {result['dynamic_tools_created']}")
-```
+---
 
-### Categorical Framework Usage (Type-Safe)
+## Quick Start
 
-```python
-from categorical_core import CategoricalToolRegistry, AritySchema, DirectAssembler
-from planner import PlannerFunctor, QueryObject
-from convergence import AnswerCoalgebra, AnswerEndofunctor, SemanticDriftMetric
+### Categorical Framework (Type-Safe Execution)
 
-# 1. Create registry with typed tools
+\`\`\`python
+import os
+from hopf_lens_dc import (
+    CategoricalToolRegistry,
+    AritySchema,
+    DirectAssembler,
+    Context,
+    PlannerFunctor,
+    QueryObject,
+)
+
+# Initialize registry
 registry = CategoricalToolRegistry()
 
-# 2. Define explicit schema (no ambiguity!)
+# Define tool with explicit schema
 schema = AritySchema()
 schema.add_arg("query", str, required=True)
 schema.add_arg("limit", int, required=False, default=10)
 
-# 3. Register tool (enforces limit checking)
+# Register tool (enforces limit checking)
 assembler = DirectAssembler(schema)
 registry.register("search_web", schema, assembler, implementation_func)
 
-# 4. Plan and execute with automatic synthesis
+# Create planner and execute
+planner = PlannerFunctor(registry)
 query = QueryObject.from_text("List 3 bridges in Paris")
 context = Context(query=query.text)
 
-planner = PlannerFunctor(registry)
 plan = planner.map_query(query, context)
-
-# ✓ Plan validated - all arguments can be assembled
 result = plan.execute(registry, context)
-```
+\`\`\`
+
+### Dynamic Tool System (Runtime Flexibility)
+
+\`\`\`bash
+python -m hopf_lens_dc.tool --api-key YOUR_KEY --query "What are the main landmarks in Paris?"
+\`\`\`
+
+Or programmatically:
+
+\`\`\`python
+from hopf_lens_dc.tool import hopf_lens_dc
+
+result = hopf_lens_dc(
+    query="What are the main landmarks in Paris?",
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+print(f"Answer: {result['answer']}")
+print(f"Confidence: {result['confidence']:.3f}")
+\`\`\`
 
 ---
 
-## 📖 Complete Example: Paris Bridges
+## Examples
 
-The categorical framework demonstrates all key features:
+### Paris Bridges Example
 
-```bash
-python3 example_paris_bridges.py
-```
+Demonstrates complete workflow with all categorical components:
 
-**What it demonstrates:**
+\`\`\`bash
+python examples/example_paris_bridges.py
+\`\`\`
 
-1. **Typed Tool Registration** - Explicit schemas prevent runtime errors
-2. **Limit Checking** - Validates `query` exists, detects `k` missing
-3. **Kan Synthesis** - Extracts `k=3` from "List 3 bridges" query text
-4. **Free Monoidal Planning** - Composes tools: `search ∘ extract ∘ dedupe`
-5. **Kleisli Execution** - Runs in effect monad with automatic error handling
-6. **Evidence Extraction** - Links claims to sources via natural transformation
-7. **Convergence** - Iterates until fixed point via coalgebra
-8. **Robustness Testing** - Validates stability under counterfactual attacks
+**Demonstrates:**
+- Typed tool registration with arity schemas
+- Limit checking and validation
+- Left Kan synthesis for missing parameter \`k=3\`
+- Free monoidal composition: \`search ∘ extract ∘ dedupe\`
+- Kleisli category execution with effect tracking
+- Evidence extraction via natural transformation
+- Coalgebra-based convergence iteration
+- Counterfactual robustness testing
 
-**Output:**
+**Expected Output:**
 
-```
+\`\`\`
 Query: List 3 landmark bridges in Paris with a one-line fact each.
 
 Answer:
 1. Pont Neuf: The oldest standing bridge across the Seine, completed in 1607.
-2. Pont Alexandre III: An arch bridge built for the 1900 Exposition Universelle.
-3. Pont de la Concorde: Built with stones from the demolished Bastille prison.
+2. Pont Alexandre III: Built for the 1900 Exposition Universelle.
+3. Pont de la Concorde: Constructed with stones from the Bastille.
 
 Metrics:
   Confidence: 0.800
   Evidence coend: 2
   Robustness: 0.969
   Fragility: 0.031
-  ✓ All tests passed
-```
+\`\`\`
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
-### Two Complementary Systems
+### Categorical Framework Components
 
-#### 1. **Dynamic Tool System** (Runtime Flexibility)
+#### 1. Kleisli Morphisms (categorical_core.py)
 
-```mermaid
-flowchart LR
-    A[Query] --> B[Bootstrap Tools]
-    B --> C[Convergence Loop]
-    C --> D[Decompose]
-    D --> E[Execute]
-    E --> F[Compose]
-    F --> G[Validate]
-    G -->|Not Converged| D
-    G -->|Converged| H[Result]
-```
+Tools as typed morphisms \`f: A × C → E[B]\` where:
+- **A**: Required argument product (explicit schema)
+- **C**: Shared context object
+- **E**: Effect monad (HTTP, parsing, timeouts)
+- **B**: Result type
 
-- **Bootstrap Phase**: LLM generates required tools
-- **Convergence Loop**: Iterative refinement with drift detection
-- **Antipode Testing**: Counterfactual robustness validation
-- **Evidence Tracking**: Monoid-based evidence aggregation
-
-#### 2. **Categorical System** (Formal Guarantees)
-
-```mermaid
-flowchart TB
-    subgraph "Category Theory Foundations"
-        A[Tools as Kleisli Morphisms<br/>f: A×C → E[B]]
-        B[Planner Functor<br/>P: Q → Free T]
-        C[Coalgebra Convergence<br/>γ: X → F X]
-        D[Evidence Transform<br/>ε: Answer ⇒ Citations]
-    end
-
-    A --> E[Typed Execution]
-    B --> E
-    C --> E
-    D --> E
-    E --> F[Guaranteed Correctness]
-```
-
-- **Kleisli Morphisms**: Tools with explicit effects and types
-- **Left Kan Extensions**: Automatic argument synthesis
-- **Free Monoidal Category**: Compositional planning
-- **Coalgebra**: Provably convergent iteration
-- **Natural Transformations**: Traceable evidence
-
----
-
-## 📚 Documentation
-
-### Core Documentation
-
-| Document | Description |
-|----------|-------------|
-| **[CATEGORICAL_FRAMEWORK.md](CATEGORICAL_FRAMEWORK.md)** | Complete theoretical foundations, API reference, and examples |
-| **[example_paris_bridges.py](example_paris_bridges.py)** | Full walkthrough with annotations |
-| **[test_categorical_framework.py](test_categorical_framework.py)** | Test suite (22 tests, all passing) |
-
-### Key Concepts
-
-#### Arity Schemas (No Missing Arguments)
-
-```python
-# Before: Unsafe - can be called with {}
-def search_web(query: str): ...
-
-# After: Type-safe - requires explicit schema
+\`\`\`python
+# Every tool requires explicit schema
 schema = AritySchema()
 schema.add_arg("query", str, required=True)
 
-# Enforces: can_invoke(context) → bool
-# If False: attempts Kan synthesis or fails gracefully
-```
+# Enforces totality - no partial functions
+assembler = DirectAssembler(schema)
 
-#### Left Kan Extension (Automatic Synthesis)
+# Can only invoke if limit exists: ∀ arg ∈ A, ∃ π: C → arg
+can_invoke, missing = tool.can_invoke(context)
+\`\`\`
 
-```python
-# Context: query = "List 3 bridges in Paris"
-# Tool needs: k (integer count)
-#
-# Synthesizer extracts: k = 3 from "List 3"
-# ✓ Tool can now execute with complete arguments
-```
+#### 2. Left Kan Extension (Automatic Synthesis)
 
-#### Convergence Coalgebra
+When projection \`π: C → A\` doesn't exist, compute \`Lan_U(C)\`:
 
-```python
-# Iterate until fixed point:
-# x₀ → F(x₀) → F²(x₀) → ... → x*
-#
-# Where F is contractive: d(F(x), F(y)) ≤ λ·d(x, y), λ < 1
-# Guarantees convergence by Banach fixed-point theorem
-```
+\`\`\`python
+synthesizer = KanSynthesizer()
+result = synthesizer.synthesize(context, schema, missing_args)
+
+# Example: "List 3 bridges" → extracts k=3
+# Query contains "3" → synthesizes integer parameter
+\`\`\`
+
+#### 3. Planner Functor (planner.py)
+
+Maps queries to free monoidal category: \`P: Q → Free(T)\`
+
+**Sequential composition (∘):**
+\`\`\`python
+plan = search_tool ∘ extract_tool ∘ dedupe_tool
+\`\`\`
+
+**Parallel composition (⊗):**
+\`\`\`python
+plan = tool1 ⊗ tool2 ⊗ tool3
+\`\`\`
+
+#### 4. Coalgebra Convergence (convergence.py)
+
+Iteration as coalgebra \`γ: X → F(X)\` on metric space:
+
+\`\`\`python
+# Answer space with metric d
+metric = CompositeMetric([
+    (SemanticDriftMetric(), 0.7),
+    (ConfidenceMetric(), 0.3)
+])
+
+# Coalgebra with contractive endofunctor
+functor = AnswerEndofunctor(contraction_factor=0.7)
+coalgebra = AnswerCoalgebra(functor, metric, epsilon=0.02)
+
+# Iterate to fixed point
+final_answer = coalgebra.iterate(initial, max_iterations=10)
+\`\`\`
+
+#### 5. Evidence as Natural Transformation (evidence.py)
+
+Every claim must factor through source: \`ε: Answer ⇒ Citations\`
+
+\`\`\`python
+evidence = Evidence()
+evidence.add_claim(claim)
+evidence.add_source(source)
+evidence.add_morphism(claim_id, source_id, strength=0.9)
+
+# Coend must be non-zero
+coend = evidence.compute_coend()  # ∫^i Hom(claim_i, source_j)
+assert coend > 0, "No evidence - rejected"
+\`\`\`
+
+#### 6. Comonad for Attacks (comonad.py)
+
+Counterfactual testing in coKleisli category:
+
+\`\`\`python
+# Comonad W with counit and comultiplication
+w = ContextComonad(value=answer)
+
+# Counit law: ε ∘ δ = id
+assert w.extract() == answer
+
+# Execute attacks
+executor = CounterfactualExecutor()
+results = executor.execute_attack_suite(answer, attacks)
+
+# Compute robustness
+scorer = RobustnessScorer()
+robustness = scorer.compute_robustness(results)
+\`\`\`
 
 ---
 
-## 🧪 Testing
+## Mathematical Foundations
+
+### Category Theory Concepts
+
+| Concept | Implementation | Guarantee |
+|---------|---------------|-----------|
+| Kleisli Category | Tools as \`f: A → E[B]\` | Explicit effects, total functions |
+| Monads | Effect monad E | Composable error handling |
+| Functors | Planner \`P: Q → Free(T)\` | Structure-preserving mapping |
+| Natural Transformations | Evidence \`ε: Answer ⇒ Citations\` | Commutes with morphisms |
+| Coalgebras | Convergence \`γ: X → F(X)\` | Fixed-point iteration |
+| Kan Extensions | Left adjoint \`S ⊣ U\` | Universal synthesis property |
+| Free Monoidal Categories | Plan composition | Sequential (∘) and parallel (⊗) |
+| Comonads | Context comonad W | Counterfactual validation |
+
+### Formal Properties
+
+**Theorem 1 (No Missing Arguments):**
+\`\`\`
+∀ tool f, ∀ context C:
+  invoke(f, C) succeeds ⟺ ∃ μ_f: C → A such that μ_f is total
+\`\`\`
+
+**Theorem 2 (Convergence):**
+\`\`\`
+If F: X → X is contractive with factor λ < 1, then:
+  ∃! x* ∈ X such that F(x*) = x*
+  and lim_{n→∞} F^n(x₀) = x* for any x₀
+\`\`\`
+
+**Theorem 3 (Evidence Completeness):**
+\`\`\`
+∀ answer A, ∀ claim c ∈ claims(A):
+  ∃ source s ∈ sources(A), ∃ morphism m ∈ Hom(c, s)
+\`\`\`
+
+---
+
+## Project Structure
+
+\`\`\`
+HOPF_LENS_DC/
+├── src/hopf_lens_dc/          # Main library source
+│   ├── __init__.py            # Package exports
+│   ├── categorical_core.py    # Kleisli morphisms, schemas, assemblers
+│   ├── planner.py             # Planner functor P: Q → Free(T)
+│   ├── convergence.py         # Coalgebra, metrics, fixed points
+│   ├── evidence.py            # Natural transformation ε
+│   ├── comonad.py             # Comonad W for counterfactuals
+│   └── tool.py                # Dynamic tool system (original)
+├── examples/                  # Example scripts
+│   └── example_paris_bridges.py
+├── tests/                     # Test suite
+│   └── test_categorical_framework.py
+├── docs/                      # Documentation
+│   └── CATEGORICAL_FRAMEWORK.md
+├── setup.py                   # Package configuration
+├── requirements.txt           # Dependencies
+└── README.md                  # This file
+\`\`\`
+
+---
+
+## Testing
 
 Run the comprehensive test suite:
 
-```bash
-python3 test_categorical_framework.py
-```
+\`\`\`bash
+python -m pytest tests/
+\`\`\`
+
+Or directly:
+
+\`\`\`bash
+python tests/test_categorical_framework.py
+\`\`\`
 
 **Test Coverage:**
-
-- ✅ Argument validation (empty dicts rejected)
-- ✅ Limit checking and synthesis
-- ✅ Tool invocation and composition
-- ✅ Planning and validation
-- ✅ Evidence extraction and policies
-- ✅ Convergence metrics
-- ✅ Comonad laws
-- ✅ Integration tests
+- Argument validation (empty dict prevention)
+- Limit checking and existence proofs
+- Kan synthesis for various types
+- Tool invocation and composition
+- Plan generation and validation
+- Evidence extraction and policies
+- Convergence metrics and criteria
+- Comonad laws (counit, comultiplication)
+- Integration tests
 
 **Result:** 22/22 tests passing
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
 ### Convergence Parameters
 
-```python
+\`\`\`python
 TAU_A = 0.02    # Semantic drift threshold
 TAU_C = 0.01    # Confidence improvement threshold
-TAU_NU = 0.15   # Maximum fragility
-```
+TAU_NU = 0.15   # Maximum allowed fragility
+\`\`\`
 
 ### Execution Limits
 
-```python
+\`\`\`python
 K_ATTACK = 3    # Counterfactual probes per iteration
 K_EXEC = 4      # Tasks per batch
 T_MAX = 10      # Maximum iterations
 TIME_BUDGET_MS = 60000  # 60 second timeout
-```
-
-### Model Selection
-
-```python
-MODEL = "gpt-4-0613"  # OpenAI model
-```
+\`\`\`
 
 ---
 
-## 🔬 Technical Details
+## Documentation
 
-### Tool Creation Process (Dynamic System)
+### Core Documentation
 
-1. **Analysis**: LLM analyzes query requirements
-2. **Generation**: Creates Python function with proper signature
-3. **Validation**: AST parsing and safety checks
-4. **Registration**: Adds to runtime registry with instrumentation
-5. **Execution**: Runs in sandboxed environment
-
-### Automatic Repair System
-
-When tools fail with known patterns:
-
-```python
-# Detects: AttributeError on BeautifulSoup get_text()
-# Applies: AST transformation to add safety guards
-# Result: _safe_get_text() wrapper that handles None
-```
-
-### Evidence Model
-
-```python
-@dataclass
-class Evidence:
-    claims: List[Claim]              # Structured claims
-    sources: List[Source]            # Provenance
-    morphisms: List[ClaimSourceMorphism]  # Links
-
-# Monoid operations:
-w₁ ⊕ w₂         # Merge with deduplication
-ν(w)            # Fragility = 1 - min(support)
-coend(w)        # Count morphisms (must be > 0)
-```
+- **[CATEGORICAL_FRAMEWORK.md](CATEGORICAL_FRAMEWORK.md)**: Complete theoretical foundations, proofs, and API reference
+- **[examples/example_paris_bridges.py](examples/example_paris_bridges.py)**: Annotated walkthrough
+- **[tests/test_categorical_framework.py](tests/test_categorical_framework.py)**: Test specifications
 
 ---
 
-## 🎓 Theoretical Foundations
+## Use Cases
 
-### Category Theory Concepts
+### Research Applications
 
-- **Kleisli Categories**: Composition of effectful computations
-- **Monads & Comonads**: Effects and contexts
-- **Functors**: Structure-preserving mappings (Planner: Q → Free(T))
-- **Natural Transformations**: Evidence as functorial mapping
-- **Coalgebras**: Unfolding for iteration (γ: X → F(X))
-- **Kan Extensions**: Universal constructions for synthesis
-- **Free Monoidal Categories**: Compositional DSL for plans
+- Formal verification of LLM agent systems
+- Compositional tool design with provable properties
+- Convergence analysis of iterative reasoning
+- Evidence-based decision making with traceability
 
-### Mathematical Guarantees
+### Production Systems
 
-| Property | Guarantee |
-|----------|-----------|
-| **Totality** | All functions total (no partial application) |
-| **Type Safety** | Explicit schemas prevent runtime type errors |
-| **Termination** | Contraction mapping ensures convergence |
-| **Traceability** | Every claim factors through source |
-| **Robustness** | Stability proven via comonad testing |
-
----
-
-## 📦 Project Structure
-
-```
-HOPF_LENS_DC/
-├── tool.py                         # Dynamic tool system (original)
-├── categorical_core.py             # Kleisli morphisms, schemas, assemblers
-├── planner.py                      # Planner functor P: Q → Free(T)
-├── convergence.py                  # Coalgebra, metrics, fixed points
-├── evidence.py                     # Natural transformation ε
-├── comonad.py                      # Counterfactual attacks
-├── example_paris_bridges.py        # Complete demonstration
-├── test_categorical_framework.py   # Test suite (22 tests)
-├── CATEGORICAL_FRAMEWORK.md        # Comprehensive documentation
-└── README.md                       # This file
-```
-
----
-
-## 🎯 Use Cases
-
-### Research & Development
-
-- Explore compositional tool design
-- Study convergence properties of iterative reasoning
-- Investigate formal verification for LLM systems
-
-### Production Applications
-
-- Build type-safe LLM agents with guarantees
-- Implement traceable decision systems
-- Create robust AI pipelines with evidence tracking
+- Type-safe LLM agents for critical applications
+- Traceable AI decision systems
+- Robust pipelines with formal guarantees
+- Fault-tolerant tool composition
 
 ### Education
 
-- Learn category theory through practical examples
-- Understand functional programming patterns
-- Study mathematical foundations of AI systems
+- Category theory through practical implementation
+- Functional programming patterns in AI systems
+- Mathematical foundations of LLM orchestration
+- Type theory and formal methods
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Contributions welcome! Areas of interest:
+Contributions are welcome. Areas of interest:
 
-- Additional synthesizers for complex types
-- More sophisticated metrics for convergence
-- Extended comonad-based testing strategies
-- Integration with other LLM frameworks
+- Extended synthesizers for complex types
+- Additional metrics for convergence
+- More sophisticated attack strategies
+- Integration with other frameworks
+- Performance optimizations
+
+**Development Setup:**
+
+\`\`\`bash
+pip install -e ".[dev]"
+python -m pytest tests/ --cov=src
+\`\`\`
 
 ---
 
-## 📄 License
+## License
 
 MIT License - See LICENSE file for details
 
 ---
 
-## 🙏 Acknowledgments
+## References
 
-This framework demonstrates advanced concepts in:
+### Category Theory
 
-- **Category Theory**: Applied to practical software engineering
-- **Type Theory**: Dependent types and totality
-- **Formal Methods**: Mathematical proofs for correctness
-- **LLM Orchestration**: Self-correcting and self-extending systems
+1. Kleisli, H. (1965). "Every standard construction is induced by a pair of adjoint functors"
+2. Moggi, E. (1991). "Notions of computation and monads"
+3. Rutten, J. (2000). "Universal coalgebra: a theory of systems"
+4. Mac Lane, S. (1971). "Categories for the Working Mathematician"
 
-**Built with**: Python, OpenAI API, BeautifulSoup, Category Theory
+### Applications
 
----
-
-## 📞 Contact & Support
-
-- **Issues**: [GitHub Issues](https://github.com/farukalpay/HOPF_LENS_DC/issues)
-- **Documentation**: See CATEGORICAL_FRAMEWORK.md for complete reference
-- **Examples**: Run `python3 example_paris_bridges.py` for demonstration
+5. Power, J. & Watanabe, H. (2002). "Combining a monad and a comonad"
+6. Uustalu, T. & Vene, V. (2008). "Comonadic notions of computation"
 
 ---
 
-<div align="center">
+## Citation
 
-**HOPF_LENS_DC** - *Where Category Theory Meets LLM Orchestration*
+If you use this framework in academic work, please cite:
 
-[Documentation](CATEGORICAL_FRAMEWORK.md) • [Examples](example_paris_bridges.py) • [Tests](test_categorical_framework.py)
+\`\`\`bibtex
+@software{hopf_lens_dc_2024,
+  title = {HOPF_LENS_DC: Categorical Tool Composition Framework},
+  author = {HOPF_LENS_DC Contributors},
+  year = {2024},
+  url = {https://github.com/farukalpay/HOPF_LENS_DC}
+}
+\`\`\`
 
-</div>
+---
+
+## Contact
+
+- Issues: [GitHub Issues](https://github.com/farukalpay/HOPF_LENS_DC/issues)
+- Documentation: [CATEGORICAL_FRAMEWORK.md](CATEGORICAL_FRAMEWORK.md)
+- Examples: [examples/](examples/)
+
+---
+
+**HOPF_LENS_DC** - Category Theory for LLM Orchestration

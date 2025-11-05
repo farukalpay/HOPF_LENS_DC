@@ -18,22 +18,27 @@ Expected output: 3 bridges with facts, all claims cited, attack-resistant.
 
 from typing import Dict, Any, List
 import json
+import sys
+import os
 
-from categorical_core import (
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.hopf_lens_dc.categorical_core import (
     Context, AritySchema, DirectAssembler, ToolMorphism,
     CategoricalToolRegistry, Effect, EffectType, create_simple_tool
 )
-from planner import PlannerFunctor, QueryObject
-from convergence import (
+from src.hopf_lens_dc.planner import PlannerFunctor, QueryObject
+from src.hopf_lens_dc.convergence import (
     Answer, AnswerEndofunctor, AnswerCoalgebra,
     CompositeMetric, SemanticDriftMetric, ConfidenceMetric,
     ConvergenceChecker
 )
-from evidence import (
+from src.hopf_lens_dc.evidence import (
     Evidence, Claim, Source, SourceType,
     ContextAwareExtractor, EvidencePolicy
 )
-from comonad import (
+from src.hopf_lens_dc.comonad import (
     AttackGenerator, CounterfactualExecutor, RobustnessScorer
 )
 
