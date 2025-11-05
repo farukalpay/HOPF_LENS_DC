@@ -17,7 +17,7 @@ search_web({})  # KeyError: 'query'
 # HOPF_LENS_DC - compile-time validation
 schema = AritySchema()
 schema.add_arg("query", str, required=True)
-# → Can only invoke if schema satisfied OR synthesis succeeds
+# -> Can only invoke if schema satisfied OR synthesis succeeds
 ```
 
 ---
@@ -35,11 +35,11 @@ When LLMs orchestrate tool calls, three critical failures occur:
 ### The Solution: Category Theory + Type Safety
 
 ```
-Traditional:  query → LLM → tool_call(???) → crash
-HOPF_LENS_DC: query → Schema Check → Synthesize Missing → Execute → Proof of Convergence
+Traditional:  query -> LLM -> tool_call(???) -> crash
+HOPF_LENS_DC: query -> Schema Check -> Synthesize Missing -> Execute -> Proof of Convergence
 ```
 
-**Key Innovation**: Model tools as morphisms `f: A×C → E[B]` where `A` must exist before invocation.
+**Key Innovation**: Model tools as morphisms `f: A×C -> E[B]` where `A` must exist before invocation.
 
 ---
 
@@ -58,7 +58,7 @@ pip install openai>=1.0.0 requests beautifulsoup4
 
 ---
 
-## 🚀 Quick Start with Live Examples
+##  Quick Start with Live Examples
 
 ### Run Your First Example (30 seconds)
 
@@ -74,11 +74,11 @@ python -m src.hopf_lens_dc.tool \
 ```
 
 **What You'll See:**
-- ✅ **8-step categorical pipeline** in action
-- ✅ **Type-safe tool invocation** with schema validation
-- ✅ **Convergence metrics** showing fixed-point iteration
-- ✅ **Evidence tracking** with claim-source morphisms
-- ✅ **Robustness testing** via counterfactual attacks
+-  **8-step categorical pipeline** in action
+-  **Type-safe tool invocation** with schema validation
+-  **Convergence metrics** showing fixed-point iteration
+-  **Evidence tracking** with claim-source morphisms
+-  **Robustness testing** via counterfactual attacks
 
 **Expected Output (abbreviated):**
 ```
@@ -89,16 +89,16 @@ python -m src.hopf_lens_dc.tool \
   search_web: can_invoke=True, missing=[]
 
 [STEP 3] Generating plan via planner functor...
-  Plan valid: True ✓
+  Plan valid: True 
 
 [STEP 6] Iterating to fixed point via coalgebra...
-  Converged: True ✓
+  Converged: True 
 
 [STEP 7] Extracting evidence via natural transformation ε...
   Claims: 1, Sources: 0, Morphisms: 0
 
 [STEP 8] Executing counterfactual attacks via comonad...
-  Robustness score: 0.970 ✓
+  Robustness score: 0.970 
 
 FINAL RESULT: Answer computed in 0.02s
 ```
@@ -116,7 +116,7 @@ python examples/example_search_query.py
 python examples/example_paris_bridges.py
 ```
 
-See [📊 Live Examples with Full Logs](#-live-examples-with-full-logs) below for complete execution traces with educational annotations.
+See [ Live Examples with Full Logs](#-live-examples-with-full-logs) below for complete execution traces with educational annotations.
 
 ---
 
@@ -169,7 +169,7 @@ schema = AritySchema()
 schema.add_arg("query", str, required=True)
 schema.add_arg("limit", int, required=False, default=10)
 
-# 3. Create assembler - total function C → A
+# 3. Create assembler - total function C -> A
 assembler = DirectAssembler(schema)
 
 # 4. Register tool
@@ -188,7 +188,7 @@ if not can_invoke:
 
 ---
 
-## 🔬 Live Examples with Full Logs
+##  Live Examples with Full Logs
 
 This section provides complete execution traces showing exactly how HOPF_LENS_DC works. Each example includes:
 - **Step-by-step execution logs** showing the categorical pipeline in action
@@ -206,7 +206,7 @@ python examples/example_math_simple.py
 ```
 
 <details>
-<summary><b>📊 Full Execution Trace (Click to expand)</b></summary>
+<summary><b> Full Execution Trace (Click to expand)</b></summary>
 
 ```
 ================================================================================
@@ -217,7 +217,7 @@ Query: Calculate the sum of 15 and 27
 [STEP 1] Creating tool registry with Kleisli morphisms...
   Registered tools: ['eval_math', 'search_web']
 ```
-**💡 What's happening:** The system initializes the categorical tool registry. Each tool is a morphism `f: A×C → E[B]` in the Kleisli category, where:
+** What's happening:** The system initializes the categorical tool registry. Each tool is a morphism `f: A×C -> E[B]` in the Kleisli category, where:
 - `A` = argument schema (finite product type)
 - `C` = execution context
 - `E[B]` = Effect monad wrapping result type `B`
@@ -226,7 +226,7 @@ Query: Calculate the sum of 15 and 27
 [STEP 2] Creating execution context...
   search_web: can_invoke=True, missing=[]
 ```
-**💡 What's happening:** Before execution, we check if all required arguments exist via **limit checking**. The system verifies that projection functions `πᵢ: Context → Aᵢ` exist for each required argument. If `missing=[]`, all projections exist!
+** What's happening:** Before execution, we check if all required arguments exist via **limit checking**. The system verifies that projection functions `πᵢ: Context -> Aᵢ` exist for each required argument. If `missing=[]`, all projections exist!
 
 ```
 [STEP 3] Generating plan via planner functor...
@@ -235,7 +235,7 @@ Query: Calculate the sum of 15 and 27
   Estimated cost: 1.0
   Plan valid: True
 ```
-**💡 What's happening:** The **planner functor** `P: Query → Free(Tools)` compiles the query into a plan. It:
+** What's happening:** The **planner functor** `P: Query -> Free(Tools)` compiles the query into a plan. It:
 1. Classifies query type (computational, factual, etc.)
 2. Selects appropriate tools from the registry
 3. Validates the plan (checks all argument schemas are satisfiable)
@@ -243,9 +243,9 @@ Query: Calculate the sum of 15 and 27
 
 ```
 [STEP 4] Executing plan via Kleisli composition...
-  ✓ Execution successful
+   Execution successful
 ```
-**💡 What's happening:** The plan executes using **Kleisli composition** (bind operator `>>=`). For sequential composition `f >=> g`:
+** What's happening:** The plan executes using **Kleisli composition** (bind operator `>>=`). For sequential composition `f >=> g`:
 ```
 (f >=> g)(x) = f(x).bind(λy. g(y))
 ```
@@ -256,7 +256,7 @@ This allows safe composition of functions returning `Effect[T]` monads. Errors p
   Initial answer: Calculate the sum of 15 and 27...
   Initial confidence: 0.6
 ```
-**💡 What's happening:** Results are composed into an initial `Answer` object with:
+** What's happening:** Results are composed into an initial `Answer` object with:
 - `text`: The answer text
 - `confidence`: Initial confidence score ∈ [0,1]
 - `metadata`: Tracking information
@@ -269,7 +269,7 @@ This allows safe composition of functions returning `Effect[T]` monads. Errors p
   Final drift: 0.0000 (threshold: 0.02)
   Converged: True
 ```
-**💡 What's happening:** The **coalgebra** `γ: Answer → F(Answer)` iterates to a fixed point using the Banach fixed-point theorem. The system:
+** What's happening:** The **coalgebra** `γ: Answer -> F(Answer)` iterates to a fixed point using the Banach fixed-point theorem. The system:
 1. Applies endofunctor `F` with contraction factor `λ < 1`
 2. Measures semantic drift using metric `d(aₙ, aₙ₊₁)`
 3. Stops when `drift < ε` (convergence threshold)
@@ -285,7 +285,7 @@ This allows safe composition of functions returning `Effect[T]` monads. Errors p
   Policy check: False
   Violations: ['Insufficient sources: 0 < 1', 'Insufficient evidence: coend=0 < 1']
 ```
-**💡 What's happening:** The **natural transformation** `ε: Answer ⇒ Evidence` extracts provenance:
+** What's happening:** The **natural transformation** `ε: Answer ⇒ Evidence` extracts provenance:
 - **Claims:** Statements made in the answer
 - **Sources:** External references (web results, documents)
 - **Morphisms:** Connections between claims and sources
@@ -297,11 +297,11 @@ The policy requires each claim to have at least one source. Failed checks indica
 [STEP 8] Executing counterfactual attacks via comonad...
   Attacks executed: 3
   Robustness score: 0.970
-    semantic_Paris→Lyon: ✓ PASSED (stability=1.000)
-    semantic_capital→city: ✓ PASSED (stability=1.000)
-    confidence_-0.30: ✓ PASSED (stability=0.910)
+    semantic_Paris->Lyon:  PASSED (stability=1.000)
+    semantic_capital->city:  PASSED (stability=1.000)
+    confidence_-0.30:  PASSED (stability=0.910)
 ```
-**💡 What's happening:** The **comonad** `W` tests answer robustness via counterfactual attacks:
+** What's happening:** The **comonad** `W` tests answer robustness via counterfactual attacks:
 1. **Semantic attacks:** Replace key terms and check stability
 2. **Confidence attacks:** Perturb confidence scores
 3. **Stability score:** Measures resistance to perturbations
@@ -320,15 +320,15 @@ Converged: True
 ================================================================================
 ```
 
-**📈 Performance Metrics:**
-- ✅ **Convergence:** True (2 iterations, drift=0.0000)
-- ⚠️ **Evidence Quality:** 0 morphisms (no sources found)
-- ✅ **Robustness:** 0.970 (highly stable)
-- ⚡ **Execution Time:** 0.00s
+** Performance Metrics:**
+-  **Convergence:** True (2 iterations, drift=0.0000)
+-  **Evidence Quality:** 0 morphisms (no sources found)
+-  **Robustness:** 0.970 (highly stable)
+-  **Execution Time:** 0.00s
 
 </details>
 
-**🎓 Key Takeaways:**
+** Key Takeaways:**
 1. **Type Safety:** Schema validation happens at plan-time, preventing runtime crashes
 2. **Composability:** Kleisli composition allows safe chaining of effectful operations
 3. **Convergence Guarantees:** Mathematical proof of convergence via Banach theorem
@@ -347,7 +347,7 @@ python examples/example_search_query.py
 ```
 
 <details>
-<summary><b>📊 Full Execution Trace (Click to expand)</b></summary>
+<summary><b> Full Execution Trace (Click to expand)</b></summary>
 
 ```
 ================================================================================
@@ -371,11 +371,11 @@ Query: What are the main properties of category theory?
   Estimated cost: 1.0
   Plan valid: True
 ```
-**💡 Difference from Example 1:** Query classified as `factual` instead of `computational`. The planner uses this to select appropriate tools (search_web vs eval_math).
+** Difference from Example 1:** Query classified as `factual` instead of `computational`. The planner uses this to select appropriate tools (search_web vs eval_math).
 
 ```
 [STEP 4] Executing plan via Kleisli composition...
-  ✓ Execution successful
+   Execution successful
 ```
 
 ```
@@ -392,7 +392,7 @@ Query: What are the main properties of category theory?
   Final drift: 0.0180 (threshold: 0.02)
   Converged: True
 ```
-**💡 Notice:** More iterations (3 vs 2) and higher final confidence (0.63 vs 0.60) as the system refines the answer.
+** Notice:** More iterations (3 vs 2) and higher final confidence (0.63 vs 0.60) as the system refines the answer.
 
 ```
 [STEP 7] Extracting evidence via natural transformation ε...
@@ -402,7 +402,7 @@ Query: What are the main properties of category theory?
   Evidence valid: True
   Policy check: True
 ```
-**💡 Success!** This time we have proper evidence tracking:
+** Success!** This time we have proper evidence tracking:
 - 4 claims extracted from the answer
 - 3 sources from web search results
 - 6 morphisms connecting claims to sources
@@ -411,20 +411,20 @@ Query: What are the main properties of category theory?
 **Evidence Graph Structure:**
 ```
 Claims              Morphisms           Sources
-┌─────────┐        ┌────────┐        ┌──────────┐
-│ claim_0 │───────→│ m₀,₀   │───────→│ source_0 │
-└─────────┘        └────────┘        └──────────┘
-┌─────────┐        ┌────────┐        ┌──────────┐
-│ claim_1 │───────→│ m₁,₀   │───────→│ source_0 │
-└─────────┘        │ m₁,₁   │───────→│ source_1 │
-                   └────────┘        └──────────┘
-┌─────────┐        ┌────────┐        ┌──────────┐
-│ claim_2 │───────→│ m₂,₁   │───────→│ source_1 │
-└─────────┘        │ m₂,₂   │───────→│ source_2 │
-                   └────────┘        └──────────┘
-┌─────────┐        ┌────────┐        ┌──────────┐
-│ claim_3 │───────→│ m₃,₂   │───────→│ source_2 │
-└─────────┘        └────────┘        └──────────┘
+                
+ claim_0 -> m₀,₀   -> source_0 
+                
+                
+ claim_1 -> m₁,₀   -> source_0 
+         m₁,₁   -> source_1 
+                           
+                
+ claim_2 -> m₂,₁   -> source_1 
+         m₂,₂   -> source_2 
+                           
+                
+ claim_3 -> m₃,₂   -> source_2 
+                
 ```
 
 The **coend** `∫^(c,s) Hom(c,s) = 6` counts the total morphisms, ensuring every claim has provenance.
@@ -433,9 +433,9 @@ The **coend** `∫^(c,s) Hom(c,s) = 6` counts the total morphisms, ensuring ever
 [STEP 8] Executing counterfactual attacks via comonad...
   Attacks executed: 3
   Robustness score: 0.945
-    semantic_category→functor: ✓ PASSED (stability=0.920)
-    semantic_morphism→arrow: ✓ PASSED (stability=0.950)
-    confidence_-0.30: ✓ PASSED (stability=0.965)
+    semantic_category->functor:  PASSED (stability=0.920)
+    semantic_morphism->arrow:  PASSED (stability=0.950)
+    confidence_-0.30:  PASSED (stability=0.965)
 ```
 
 ```
@@ -450,15 +450,15 @@ Converged: True
 ================================================================================
 ```
 
-**📈 Performance Metrics:**
-- ✅ **Convergence:** True (3 iterations, drift=0.0180)
-- ✅ **Evidence Quality:** 6 morphisms (all claims sourced!)
-- ✅ **Robustness:** 0.945 (stable under perturbations)
-- ⚡ **Execution Time:** 0.02s
+** Performance Metrics:**
+-  **Convergence:** True (3 iterations, drift=0.0180)
+-  **Evidence Quality:** 6 morphisms (all claims sourced!)
+-  **Robustness:** 0.945 (stable under perturbations)
+-  **Execution Time:** 0.02s
 
 </details>
 
-**🎓 Key Takeaways:**
+** Key Takeaways:**
 1. **Evidence Tracking:** Every claim is connected to sources via morphisms
 2. **Coend Calculation:** Provenance is quantified using category theory
 3. **Policy Enforcement:** System rejects answers with insufficient evidence
@@ -476,7 +476,7 @@ python examples/example_paris_bridges.py
 ```
 
 <details>
-<summary><b>📊 Full Execution Trace (Click to expand)</b></summary>
+<summary><b> Full Execution Trace (Click to expand)</b></summary>
 
 ### Execution Flow (Annotated)
 
@@ -489,12 +489,12 @@ STEP 1: Argument Assembly & Limit Checking
 
 ```
 search_web: can_invoke=True, missing=[]
-  ✓ Limit exists (query projection found)
+   Limit exists (query projection found)
 
 extract_facts: can_invoke=False, missing=['k']
-  ✗ Missing projections: ['k']
-  → Triggering Kan synthesis for missing arguments...
-  ✓ Synthesized: {'k': 3}
+   Missing projections: ['k']
+  -> Triggering Kan synthesis for missing arguments...
+   Synthesized: {'k': 3}
 ```
 
 **Engineering Insight:** The system detects `k` (count parameter) is missing. Instead of crashing, it applies **Left Kan Extension** - extracts "3" from query text "List **3** bridges" and synthesizes `k=3`.
@@ -518,15 +518,15 @@ STEP 3: Execution (Kleisli Category)
 ======================================================================
 Executing: search_web
   [search_web] query='List 3 landmark bridges in Paris...'
-  ✓ Success: 3 results
+   Success: 3 results
 
 Executing: extract_facts
   [extract_facts] entities=0, k=3  ← synthesized parameter
-  ✓ Success: 3 facts extracted
+   Success: 3 facts extracted
 
 Executing: dedupe
   [dedupe] processing 3 facts
-  ✓ Success: 3 unique facts
+   Success: 3 unique facts
 ```
 
 **Engineering Insight:** Sequential composition `search ∘ extract ∘ dedupe` executes in Kleisli category. Each step returns `Effect[T]` monad handling errors gracefully.
@@ -573,21 +573,21 @@ Convergence metrics:
   Converged: False
 ```
 
-**Engineering Insight:** Coalgebra `γ: X → F(X)` iterates answer refinement. Banach fixed-point theorem guarantees convergence when `F` is contractive. Here drift exceeds threshold - would iterate further in production.
+**Engineering Insight:** Coalgebra `γ: X -> F(X)` iterates answer refinement. Banach fixed-point theorem guarantees convergence when `F` is contractive. Here drift exceeds threshold - would iterate further in production.
 
 ```
 ======================================================================
 STEP 7: Counterfactual Attacks (Comonad W)
 ======================================================================
 Generated 3 attacks:
-  - semantic_Pont→[REDACTED]
-  - semantic_Neuf:→[REDACTED]
+  - semantic_Pont->[REDACTED]
+  - semantic_Neuf:->[REDACTED]
   - confidence_-0.30
 
 Attack results:
-  semantic_Pont→[REDACTED]: ✓ PASSED (stability=0.968)
-  semantic_Neuf:→[REDACTED]: ✓ PASSED (stability=0.968)
-  confidence_-0.30: ✓ PASSED (stability=0.910)
+  semantic_Pont->[REDACTED]:  PASSED (stability=0.968)
+  semantic_Neuf:->[REDACTED]:  PASSED (stability=0.968)
+  confidence_-0.30:  PASSED (stability=0.910)
 
 Robustness: 0.969
 Fragility: 0.031
@@ -613,7 +613,7 @@ Metrics:
 
 </details>
 
-**🎓 Key Takeaways:**
+** Key Takeaways:**
 1. **Kan Synthesis:** Automatically extracts missing arguments from query context
 2. **Multi-Tool Composition:** Sequential pipeline `search ∘ extract ∘ dedupe`
 3. **Evidence Extraction:** Natural transformation links claims to sources
@@ -621,7 +621,7 @@ Metrics:
 
 ---
 
-## 📖 Understanding the Logs
+##  Understanding the Logs
 
 ### Log Structure Guide
 
@@ -629,12 +629,12 @@ Each execution follows an 8-step categorical pipeline:
 
 | Step | Component | Category Theory Concept | What It Does |
 |------|-----------|------------------------|--------------|
-| **1** | Registry Setup | Kleisli Category | Creates tools as morphisms `f: A×C → E[B]` |
-| **2** | Limit Checking | Projection Functions | Verifies `∃πᵢ: Context → Aᵢ` for all args |
-| **3** | Plan Generation | Planner Functor | Compiles `P: Query → Free(Tools)` |
+| **1** | Registry Setup | Kleisli Category | Creates tools as morphisms `f: A×C -> E[B]` |
+| **2** | Limit Checking | Projection Functions | Verifies `∃πᵢ: Context -> Aᵢ` for all args |
+| **3** | Plan Generation | Planner Functor | Compiles `P: Query -> Free(Tools)` |
 | **4** | Execution | Kleisli Composition | Executes via bind: `f >=> g` |
 | **5** | Answer Composition | Initial Object | Creates `Answer₀` from results |
-| **6** | Convergence | Coalgebra | Iterates `γ: X → F(X)` to fixed point |
+| **6** | Convergence | Coalgebra | Iterates `γ: X -> F(X)` to fixed point |
 | **7** | Evidence Extraction | Natural Transformation | Applies `ε: Answer ⇒ Evidence` |
 | **8** | Robustness Testing | Comonad | Tests stability via counterfactuals |
 
@@ -642,37 +642,37 @@ Each execution follows an 8-step categorical pipeline:
 
 **Convergence Metrics:**
 - **Drift:** Semantic distance between iterations
-  - `< 0.02` = Converged ✅
-  - `> 0.02` = Still iterating 🔄
+  - `< 0.02` = Converged 
+  - `> 0.02` = Still iterating 
 - **Confidence:** Answer reliability ∈ [0, 1]
-  - `> 0.8` = High confidence ✅
-  - `0.5-0.8` = Medium confidence ⚠️
-  - `< 0.5` = Low confidence ❌
+  - `> 0.8` = High confidence 
+  - `0.5-0.8` = Medium confidence 
+  - `< 0.5` = Low confidence 
 
 **Evidence Metrics:**
 - **Coend:** `∫^(c,s) Hom(claim, source)` — total claim-source connections
-  - `> claims` = Excellent evidence ✅
-  - `= claims` = Adequate evidence ⚠️
-  - `< claims` = Insufficient evidence ❌
+  - `> claims` = Excellent evidence 
+  - `= claims` = Adequate evidence 
+  - `< claims` = Insufficient evidence 
 - **Claims:** Number of statements in answer
 - **Sources:** Number of external references
-- **Morphisms:** Explicit claim→source links
+- **Morphisms:** Explicit claim->source links
 
 **Robustness Metrics:**
 - **Robustness Score:** Stability under perturbations ∈ [0, 1]
-  - `> 0.9` = Highly robust ✅
-  - `0.7-0.9` = Moderately robust ⚠️
-  - `< 0.7` = Fragile ❌
+  - `> 0.9` = Highly robust 
+  - `0.7-0.9` = Moderately robust 
+  - `< 0.7` = Fragile 
 - **Attacks:** Number of counterfactual tests
 - **Stability:** Per-attack resistance score
 
 ### Color-Coded Status Indicators
 
 Throughout the logs, you'll see:
-- `✓ PASSED` — Test succeeded, system functioning correctly
-- `✗ FAILED` — Test failed, issue detected
-- `→` — Action being triggered (e.g., Kan synthesis)
-- `⚠️` — Warning, may need attention
+- ` PASSED` — Test succeeded, system functioning correctly
+- ` FAILED` — Test failed, issue detected
+- `->` — Action being triggered (e.g., Kan synthesis)
+- `` — Warning, may need attention
 
 ---
 
@@ -681,40 +681,40 @@ Throughout the logs, you'll see:
 ### Component Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  categorical_core.py  - Type System & Schemas               │
-│  • AritySchema: Explicit argument contracts                 │
-│  • KanSynthesizer: Automatic parameter extraction           │
-│  • Effect Monad: Composable error handling                  │
-└─────────────────────────────────────────────────────────────┘
+
+  categorical_core.py  - Type System & Schemas               
+  • AritySchema: Explicit argument contracts                 
+  • KanSynthesizer: Automatic parameter extraction           
+  • Effect Monad: Composable error handling                  
+
                             ↓
-┌─────────────────────────────────────────────────────────────┐
-│  planner.py  - Query → Plan Compiler                        │
-│  • PlannerFunctor: P: Query → Free(Tools)                   │
-│  • Sequential (∘) and Parallel (⊗) composition              │
-│  • Plan validation before execution                         │
-└─────────────────────────────────────────────────────────────┘
+
+  planner.py  - Query -> Plan Compiler                        
+  • PlannerFunctor: P: Query -> Free(Tools)                   
+  • Sequential (∘) and Parallel (⊗) composition              
+  • Plan validation before execution                         
+
                             ↓
-┌─────────────────────────────────────────────────────────────┐
-│  convergence.py  - Fixed-Point Iteration                    │
-│  • Coalgebra γ: Answer → F(Answer)                          │
-│  • Metric space with proven contraction                     │
-│  • Banach theorem guarantees convergence                    │
-└─────────────────────────────────────────────────────────────┘
+
+  convergence.py  - Fixed-Point Iteration                    
+  • Coalgebra γ: Answer -> F(Answer)                          
+  • Metric space with proven contraction                     
+  • Banach theorem guarantees convergence                    
+
                             ↓
-┌─────────────────────────────────────────────────────────────┐
-│  evidence.py  - Provenance Tracking                         │
-│  • Natural transformation ε: Answer ⇒ Citations             │
-│  • Coend ∫ Hom(claim, source) must be non-zero              │
-│  • Reject answers without evidence                          │
-└─────────────────────────────────────────────────────────────┘
+
+  evidence.py  - Provenance Tracking                         
+  • Natural transformation ε: Answer ⇒ Citations             
+  • Coend ∫ Hom(claim, source) must be non-zero              
+  • Reject answers without evidence                          
+
                             ↓
-┌─────────────────────────────────────────────────────────────┐
-│  comonad.py  - Robustness Testing                           │
-│  • Comonad W for context extraction                         │
-│  • Counterfactual attacks test stability                    │
-│  • Counit law ensures sanity checks pass                    │
-└─────────────────────────────────────────────────────────────┘
+
+  comonad.py  - Robustness Testing                           
+  • Comonad W for context extraction                         
+  • Counterfactual attacks test stability                    
+  • Counit law ensures sanity checks pass                    
+
 ```
 
 ### Core Concepts for Engineers
@@ -732,37 +732,37 @@ schema.add_arg("query", str, required=True)
 schema.add_arg("limit", int, required=False, default=10)
 
 # Validate before execution
-valid, errors = schema.validate({"query": "test"})  # ✓
-valid, errors = schema.validate({})  # ✗ - caught early
+valid, errors = schema.validate({"query": "test"})  # 
+valid, errors = schema.validate({})  #  - caught early
 ```
 
 #### 2. Limit Checking - Existence Proofs
 
 **Problem:** Arguments may not exist in context.
 
-**Solution:** Check if projection `π: Context → Arg` exists.
+**Solution:** Check if projection `π: Context -> Arg` exists.
 
 ```python
 tool = registry.get("search_web")
 can_invoke, missing = tool.can_invoke(context)
 
 # Returns: (False, ['query']) if context has no query field
-# → Prevents KeyError at runtime
+# -> Prevents KeyError at runtime
 ```
 
 #### 3. Kan Synthesis - Automatic Extraction
 
 **Problem:** Arguments missing but inferable from query.
 
-**Solution:** Left Kan Extension `Lan_U: Context → Args`.
+**Solution:** Left Kan Extension `Lan_U: Context -> Args`.
 
 ```python
 # Query: "List 5 results"
 # Missing: limit parameter
 
 synthesizer.synthesize(context, schema, ['limit'])
-# → Extracts "5" from query text
-# → Returns {'limit': 5}
+# -> Extracts "5" from query text
+# -> Returns {'limit': 5}
 ```
 
 **Implementation:**
@@ -796,11 +796,11 @@ result = search(args, ctx).bind(lambda r: process(r, ctx))
 **Solution:** Contractive functor + Banach theorem.
 
 ```python
-# F: Answer → Answer with contraction factor λ < 1
+# F: Answer -> Answer with contraction factor λ < 1
 functor = AnswerEndofunctor(contraction_factor=0.7)
 
 # d(F(x), F(y)) ≤ 0.7 * d(x, y)
-# → Guaranteed to converge to unique fixed point
+# -> Guaranteed to converge to unique fixed point
 
 coalgebra = AnswerCoalgebra(functor, metric, epsilon=0.02)
 final = coalgebra.iterate(initial, max_iterations=10)
@@ -808,7 +808,7 @@ final = coalgebra.iterate(initial, max_iterations=10)
 
 **Mathematical Guarantee:**
 ```
-∀ x₀, lim_{n→∞} F^n(x₀) = x*  where F(x*) = x*
+∀ x₀, lim_{n->∞} F^n(x₀) = x*  where F(x*) = x*
 ```
 
 #### 6. Evidence Coend - Provenance
@@ -1061,19 +1061,19 @@ See [CATEGORICAL_FRAMEWORK.md](CATEGORICAL_FRAMEWORK.md) for complete API docume
 
 ```
 HOPF_LENS_DC/
-├── src/hopf_lens_dc/          # Core library
-│   ├── categorical_core.py    # Type system, schemas, assemblers
-│   ├── planner.py             # Query → Plan compilation
-│   ├── convergence.py         # Fixed-point iteration
-│   ├── evidence.py            # Provenance tracking
-│   ├── comonad.py             # Robustness testing
-│   └── tool.py                # Dynamic tool system
-├── examples/                  # Live examples
-│   └── example_paris_bridges.py
-├── tests/                     # Test suite (22 tests)
-│   └── test_categorical_framework.py
-├── setup.py                   # pip install -e .
-└── requirements.txt           # Dependencies
+ src/hopf_lens_dc/          # Core library
+    categorical_core.py    # Type system, schemas, assemblers
+    planner.py             # Query -> Plan compilation
+    convergence.py         # Fixed-point iteration
+    evidence.py            # Provenance tracking
+    comonad.py             # Robustness testing
+    tool.py                # Dynamic tool system
+ examples/                  # Live examples
+    example_paris_bridges.py
+ tests/                     # Test suite (22 tests)
+    test_categorical_framework.py
+ setup.py                   # pip install -e .
+ requirements.txt           # Dependencies
 ```
 
 ---
@@ -1103,7 +1103,7 @@ HOPF_LENS_DC/
 
 ---
 
-## 🔧 Troubleshooting & FAQ
+##  Troubleshooting & FAQ
 
 ### Common Issues
 
