@@ -1,19 +1,22 @@
 """
-Full HOPF_LENS_DC runner with all categorical features enabled:
-- Type checking via schema validation
-- Dynamic synthesis via Kan extension
-- Convergence guarantees
-- Evidence tracking
+HOPF_LENS_DC runner using the REAL categorical framework.
+
+This implementation uses:
+- AritySchema from categorical_core for type checking
+- Context and projections for argument assembly
+- KanSynthesizer for automatic argument extraction
+- CategoricalToolRegistry for tool execution
+- Effect monad for composable error handling
 """
 
 import json
 import time
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import openai
 from bench.runners import BenchmarkResult
-from bench.tools import get_tool, TOOL_REGISTRY, reset_mock_db
+from bench.tools import TOOL_REGISTRY, reset_mock_db
 
-# Import HOPF_LENS_DC components
+# Import actual HOPF_LENS_DC categorical framework
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
@@ -25,15 +28,15 @@ from src.hopf_lens_dc.categorical_core import (
     Context,
     Effect,
     EffectType,
-    KanSynthesizer
+    KanSynthesizer,
+    ToolMorphism
 )
 
-# Token cost estimates
 INPUT_TOKEN_COST = 0.00003
 OUTPUT_TOKEN_COST = 0.00006
 
 
-class HOPFFullRunner:
+class HOPFCategoricalRunner:
     """HOPF_LENS_DC runner with full categorical guarantees."""
 
     def __init__(
@@ -51,10 +54,10 @@ class HOPFFullRunner:
         self.timeout_s = timeout_s
         self.synthesizer = KanSynthesizer()
 
-        # Build categorical tool registry
-        self.registry = self._build_registry()
+        # Build categorical tool registry with proper schemas
+        self.registry = self._build_categorical_registry()
 
-    def _build_registry(self) -> CategoricalToolRegistry:
+    def _build_categorical_registry(self) -> CategoricalToolRegistry:
         """Build categorical tool registry from benchmark tools."""
         registry = CategoricalToolRegistry()
 
@@ -71,13 +74,15 @@ class HOPFFullRunner:
                 return Effect.fail(result.error)
 
         math_assembler = DirectAssembler(math_schema, {"expression": "expression"})
-        registry.register(
-            "eval_math",
-            math_schema,
-            math_assembler,
-            math_impl,
-            effects=[EffectType.COMPUTATIONAL]
+
+        math_tool = ToolMorphism(
+            name="eval_math",
+            schema=math_schema,
+            assembler=math_assembler,
+            func=math_impl,
+            effects=[EffectType.PURE]
         )
+        registry.tools["eval_math"] = math_tool
 
         # Register web_search
         search_schema = AritySchema()
@@ -96,13 +101,15 @@ class HOPFFullRunner:
             search_schema,
             {"query": "query", "limit": "limit"}
         )
-        registry.register(
-            "web_search",
-            search_schema,
-            search_assembler,
-            search_impl,
+
+        search_tool = ToolMorphism(
+            name="web_search",
+            schema=search_schema,
+            assembler=search_assembler,
+            func=search_impl,
             effects=[EffectType.HTTP]
         )
+        registry.tools["web_search"] = search_tool
 
         # Register crud_tool
         crud_schema = AritySchema()
@@ -128,26 +135,26 @@ class HOPFFullRunner:
                 "data": "data"
             }
         )
-        registry.register(
-            "crud_tool",
-            crud_schema,
-            crud_assembler,
-            crud_impl,
-            effects=[EffectType.DATABASE]
+
+        crud_tool = ToolMorphism(
+            name="crud_tool",
+            schema=crud_schema,
+            assembler=crud_assembler,
+            func=crud_impl,
+            effects=[EffectType.IO]
         )
+        registry.tools["crud_tool"] = crud_tool
 
         return registry
 
     def _get_system_prompt(self) -> str:
         """Get system prompt with tool descriptions."""
         tool_descriptions = []
-        for tool_name, tool in self.registry.tools.items():
-            schema = tool.schema
-            required = ", ".join(
-                f"{k}:{v.__name__}" for k, v in schema.required_args.items()
-            )
+
+        for tool_name, (_, bench_schema) in TOOL_REGISTRY.items():
+            required = ", ".join(f"{k}:{v.__name__}" for k, v in bench_schema.required_args.items())
             optional = ", ".join(
-                f"{k}:{v[0].__name__}={v[1]}" for k, v in schema.optional_args.items()
+                f"{k}:{v[0].__name__}={v[1]}" for k, v in bench_schema.optional_args.items()
             )
             args_str = required
             if optional:
@@ -188,14 +195,16 @@ Be concise and accurate."""
             return None
 
     def run_task(self, task: Dict[str, Any]) -> BenchmarkResult:
-        """Run task with full HOPF_LENS_DC guarantees."""
+        """Run task with categorical HOPF_LENS_DC guarantees."""
         task_id = task['task_id']
         description = task['description']
         start_time = time.time()
 
         reset_mock_db()
 
+        # Create categorical context
         context = Context(query=description)
+
         messages = [
             {"role": "system", "content": self._get_system_prompt()},
             {"role": "user", "content": description}
@@ -242,9 +251,9 @@ Be concise and accurate."""
 
                 if "tool" in parsed and "args" in parsed:
                     tool_name = parsed["tool"]
-                    args = parsed["args"]
+                    llm_args = parsed["args"]
 
-                    # Check if tool exists
+                    # Check if tool exists in categorical registry
                     if tool_name not in self.registry.tools:
                         error = f"Unknown tool: {tool_name}"
                         break
@@ -252,45 +261,47 @@ Be concise and accurate."""
                     tool = self.registry.tools[tool_name]
                     schema = tool.schema
 
-                    # TYPE CHECKING: Validate schema
+                    # Build context with LLM-provided args
+                    current_context = context
+                    for key, value in llm_args.items():
+                        current_context = current_context.extend(key, value)
+
+                    # TYPE CHECKING: Use has_limit to check if all required projections exist
+                    has_limit, missing_projections = schema.has_limit(current_context)
+
                     validation_errs = []
-                    has_limit, missing = schema.has_limit(context)
+                    if not has_limit:
+                        # Missing required arguments - record validation errors
+                        for missing in missing_projections:
+                            validation_errs.append(f"Missing required argument: {missing}")
 
-                    # Build context with provided args
-                    for key, value in args.items():
-                        context = context.extend(key, value)
-
-                    # Check if all required args are present
-                    for req_arg in schema.required_args.keys():
-                        if not context.has_projection(req_arg):
-                            validation_errs.append(f"Missing required arg: {req_arg}")
-
-                    # SYNTHESIS: If args missing, try synthesis
-                    if validation_errs:
-                        missing_args = [
-                            arg for arg in schema.required_args.keys()
-                            if not context.has_projection(arg)
-                        ]
+                        # SYNTHESIS: Try Kan extension to fill missing args
                         synth_result = self.synthesizer.synthesize(
-                            context, schema, missing_args
+                            current_context, schema, missing_projections
                         )
+
                         if synth_result.is_success():
                             # Add synthesized args to context
                             for key, value in synth_result.value.items():
-                                context = context.extend(key, value)
-                            validation_errs = []  # Clear errors
+                                current_context = current_context.extend(key, value)
+                                llm_args[key] = value  # Also update for recording
 
-                    # Execute tool via registry
+                            # Re-check has_limit after synthesis
+                            has_limit, missing_projections = schema.has_limit(current_context)
+                            if has_limit:
+                                validation_errs = []  # Clear errors if synthesis succeeded
+
+                    # Execute tool via categorical registry
                     result = self.registry.invoke(
-                        tool_name, context, use_synthesis=True
+                        tool_name, current_context, use_synthesis=True
                     )
 
-                    # Record tool call
+                    # Record tool call with validation status
                     is_valid = len(validation_errs) == 0 and result.is_success()
                     tool_calls.append({
                         'iteration': iterations,
                         'tool_name': tool_name,
-                        'args': args,
+                        'args': llm_args,
                         'is_valid': is_valid,
                         'validation_errors': validation_errs,
                         'success': result.is_success(),
@@ -348,6 +359,6 @@ Be concise and accurate."""
         )
 
 
-def create_runner(api_key: str, **kwargs) -> HOPFFullRunner:
-    """Factory function to create HOPF full runner."""
-    return HOPFFullRunner(api_key=api_key, **kwargs)
+def create_runner(api_key: str, **kwargs):
+    """Factory function to create categorical HOPF runner."""
+    return HOPFCategoricalRunner(api_key=api_key, **kwargs)

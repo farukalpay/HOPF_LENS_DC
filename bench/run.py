@@ -276,36 +276,38 @@ def save_results(
     print(f'{"Runner":<25} {"Success":<10} {"Validity":<10} {"Iters":<8} {"Latency(ms)":<12} {"Cost($)":<10}')
     print('-'*80)
 
-    for runner_type in ['langgraph', 'hopf_full', 'hopf_no_typechecks', 'hopf_no_synthesis']:
+    # Only print runners that were actually executed
+    for runner_type in sorted(metrics.keys()):
         m = metrics[runner_type]
         print(f'{runner_type:<25} {m["success_rate"]*100:>7.2f}%  {m["validity_rate"]*100:>7.2f}%  '
               f'{m["avg_iterations"]:>6.2f}  {m["avg_latency_ms"]:>10.1f}  {m["total_cost"]:>8.4f}')
 
     print('='*80)
 
-    # Determine winner
-    baseline = metrics['langgraph']
-    hopf_full = metrics['hopf_full']
+    # Determine winner only if both baseline and hopf_full were run
+    if 'langgraph' in metrics and 'hopf_full' in metrics:
+        baseline = metrics['langgraph']
+        hopf_full = metrics['hopf_full']
 
-    success_delta = (hopf_full['success_rate'] - baseline['success_rate']) * 100
-    validity_delta = (baseline['validity_rate'] - hopf_full['validity_rate']) * 100  # Lower is better
-    latency_ratio = hopf_full['avg_latency_ms'] / baseline['avg_latency_ms']
-    cost_ratio = hopf_full['total_cost'] / baseline['total_cost']
+        success_delta = (hopf_full['success_rate'] - baseline['success_rate']) * 100
+        validity_delta = (baseline['validity_rate'] - hopf_full['validity_rate']) * 100  # Lower is better
+        latency_ratio = hopf_full['avg_latency_ms'] / baseline['avg_latency_ms']
+        cost_ratio = hopf_full['total_cost'] / baseline['total_cost']
 
-    print('\nCOMPARISON: HOPF_FULL vs LANGGRAPH')
-    print(f'  Success rate delta: {success_delta:+.2f} pp')
-    print(f'  Invalid call reduction: {validity_delta:+.2f} pp')
-    print(f'  Latency ratio: {latency_ratio:.2f}x')
-    print(f'  Cost ratio: {cost_ratio:.2f}x')
+        print('\nCOMPARISON: HOPF_FULL vs LANGGRAPH')
+        print(f'  Success rate delta: {success_delta:+.2f} pp')
+        print(f'  Invalid call reduction: {validity_delta:+.2f} pp')
+        print(f'  Latency ratio: {latency_ratio:.2f}x')
+        print(f'  Cost ratio: {cost_ratio:.2f}x')
 
-    # Win criteria: ≥5pp higher success OR ≥20pp fewer invalid calls, with non-inferior latency/cost (±5%)
-    win = False
-    if success_delta >= 5 or validity_delta >= 20:
-        if latency_ratio <= 1.05 and cost_ratio <= 1.05:
-            win = True
+        # Win criteria: ≥5pp higher success OR ≥20pp fewer invalid calls, with non-inferior latency/cost (±5%)
+        win = False
+        if success_delta >= 5 or validity_delta >= 20:
+            if latency_ratio <= 1.05 and cost_ratio <= 1.05:
+                win = True
 
-    print(f'\nWINNER: {"HOPF_LENS_DC" if win else "TIE/LANGGRAPH"}')
-    print('='*80)
+        print(f'\nWINNER: {"HOPF_LENS_DC" if win else "TIE/LANGGRAPH"}')
+        print('='*80)
 
 
 def main():
