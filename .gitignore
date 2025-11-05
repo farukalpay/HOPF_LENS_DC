@@ -132,3 +132,8 @@ dmypy.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Benchmark artifacts (generated during runs)
+bench/artifacts/*.jsonl
+bench/results/*.csv
+bench/results/*.json
