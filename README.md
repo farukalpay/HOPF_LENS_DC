@@ -283,6 +283,79 @@ The system provides core tools that are always available:
 - **eval_math**: Safe mathematical expression evaluation
 - **fetch_api**: Generic HTTP API fetcher
 
+## Categorical Tool Framework (NEW!)
+
+A **formally verified, type-safe framework** for composable tool execution using category theory. This framework eliminates missing-argument bugs (like `search_web({})`) by construction and provides mathematical guarantees.
+
+### Key Features
+
+✓ **No Missing Arguments**: Tools cannot be invoked with empty/incomplete dictionaries
+✓ **Automatic Synthesis**: Missing args synthesized via left Kan extensions
+✓ **Compositional**: Tools compose via free monoidal category (∘ and ⊗)
+✓ **Convergent**: Fixed-point iteration proven contractive
+✓ **Traceable**: Full evidence provenance via natural transformations
+✓ **Robust**: Counterfactual testing via comonad structure
+
+### Quick Start
+
+```python
+from categorical_core import CategoricalToolRegistry, AritySchema, DirectAssembler
+from planner import PlannerFunctor, QueryObject
+
+# Create registry
+registry = CategoricalToolRegistry()
+
+# Define tool with explicit schema
+schema = AritySchema()
+schema.add_arg("query", str, required=True)
+schema.add_arg("limit", int, required=False, default=10)
+
+# Register tool (enforces limit checking)
+registry.register(name="search_web", schema=schema, assembler=..., func=...)
+
+# Plan and execute with automatic synthesis
+query = QueryObject.from_text("List 3 Paris bridges")
+planner = PlannerFunctor(registry)
+plan = planner.map_query(query, context)
+result = plan.execute(registry, context)  # ✓ No empty dicts possible!
+```
+
+### Example: Paris Bridges
+
+```bash
+python3 example_paris_bridges.py
+```
+
+Demonstrates:
+- Typed tool schemas with arity checking
+- Left Kan synthesis for missing `k=3` parameter
+- Free monoidal composition (search ∘ extract ∘ dedupe)
+- Evidence extraction via natural transformation
+- Coalgebra-based convergence
+- Counterfactual robustness testing
+
+### Documentation
+
+See **[CATEGORICAL_FRAMEWORK.md](CATEGORICAL_FRAMEWORK.md)** for:
+- Theoretical foundations (Kleisli categories, coalgebras, Kan extensions)
+- Complete API reference
+- Usage guide with examples
+- Test suite documentation
+
+### Test Suite
+
+```bash
+python3 test_categorical_framework.py
+```
+
+**22 tests** covering:
+- Argument validation (no empty dicts!)
+- Limit checking and synthesis
+- Tool composition
+- Evidence extraction
+- Convergence properties
+- Comonad laws
+
 ## Architecture Philosophy
 
 HOPF_LENS_DC embodies several key principles:
@@ -292,6 +365,7 @@ HOPF_LENS_DC embodies several key principles:
 3. **Failure Recovery**: Automatic repair mechanisms handle common error patterns
 4. **Convergence Guarantees**: Mathematical framework ensures principled termination
 5. **Evidence-Based Reasoning**: Claims are tracked with provenance and confidence
+6. **Type Safety**: Categorical framework eliminates entire classes of bugs by construction
 
 ## License
 
