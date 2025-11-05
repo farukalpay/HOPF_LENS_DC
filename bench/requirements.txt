@@ -1,0 +1,15 @@
+# Benchmark dependencies for HOPF vs LangGraph comparison
+# Pinned versions for reproducibility
+
+# Core dependencies
+openai==1.54.3
+python-dotenv==1.0.0
+
+# Data handling
+numpy==1.26.4
+pandas==2.2.1
+
+# Testing (if needed)
+pytest==8.0.2
+
+# Note: HOPF_LENS_DC dependencies are inherited from parent requirements.txt
